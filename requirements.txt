@@ -1,0 +1,17 @@
+tweepy==4.14.0
+# snscrape n'est pas compatible avec Python 3.14
+# Utiliser tweepy ou attendre la réinitialisation du quota API
+textblob==0.17.1
+nltk==3.8.1
+pandas>=2.2.0
+matplotlib>=3.8.2
+seaborn>=0.13.0
+wordcloud>=1.9.3
+streamlit>=1.29.0
+plotly>=5.18.0
+python-dotenv>=1.0.0
+# Dashboard moderne avec FastAPI
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+

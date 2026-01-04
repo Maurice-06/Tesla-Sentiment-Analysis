@@ -1,0 +1,36 @@
+# Environnement virtuel
+venv/
+env/
+.venv/
+
+# Variables d'environnement
+.env
+
+# Données
+data/*.csv
+data/*.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+

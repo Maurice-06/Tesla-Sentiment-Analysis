@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tesla Sentiment Analysis</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Font Awesome pour les icônes -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+      * {
+        font-family: "Inter", sans-serif;
+      }
+
+      .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+
+      .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      @keyframes glow {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))
+            drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
+        }
+        50% {
+          filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8))
+            drop-shadow(0 0 24px rgba(255, 255, 255, 0.6))
+            drop-shadow(0 0 32px rgba(255, 255, 255, 0.4));
+        }
+      }
+
+      .main-header-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        animation: fadeInDown 1s ease-out, glow 3s ease-in-out infinite;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        transition: transform 0.3s ease;
+      }
+
+      .main-header-title:hover {
+        transform: scale(1.05);
+      }
+
+      .tesla-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        filter: brightness(0) invert(1);
+        animation: fadeInDown 1s ease-out;
+      }
+
+      .loading-spinner {
+        border: 3px solid #f3f4f6;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .sentiment-positive {
+        color: #10b981;
+      }
+      .sentiment-negative {
+        color: #ef4444;
+      }
+      .sentiment-neutral {
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+      <div class="container mx-auto px-4 py-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <img
+              src="/static/tesla_logo.svg"
+              alt="Tesla Logo"
+              class="tesla-logo"
+            />
+            <h1 class="main-header-title">Tesla Sentiment Analysis</h1>
+          </div>
+          <div class="flex items-center space-x-2 text-sm">
+            <i class="fas fa-chart-line"></i>
+            <span>Analyse en temps réel</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+      <!-- Filtres -->
+      <div class="bg-white rounded-xl shadow-md p-6 mb-6 fade-in">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">
+          <i class="fas fa-filter mr-2"></i>Filtres
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Sentiment</label
+            >
+            <select
+              id="sentimentFilter"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="all">Tous</option>
+              <option value="positive">Positif</option>
+              <option value="negative">Négatif</option>
+              <option value="neutral">Neutre</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Date de début</label
+            >
+            <input
+              type="date"
+              id="startDate"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Date de fin</label
+            >
+            <input
+              type="date"
+              id="endDate"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+        <button
+          onclick="applyFilters()"
+          class="mt-4 px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
+        >
+          <i class="fas fa-sync-alt mr-2"></i>Appliquer les filtres
+        </button>
+      </div>
+
+      <!-- Métriques -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 mb-1">Total Tweets</p>
+              <p class="text-3xl font-bold text-gray-800" id="totalTweets">-</p>
+            </div>
+            <div class="bg-blue-100 p-3 rounded-full">
+              <i class="fas fa-comments text-blue-600 text-2xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 mb-1">Positifs</p>
+              <p class="text-3xl font-bold sentiment-positive" id="positivePct">
+                -
+              </p>
+            </div>
+            <div class="bg-green-100 p-3 rounded-full">
+              <i class="fas fa-smile text-green-600 text-2xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 mb-1">Négatifs</p>
+              <p class="text-3xl font-bold sentiment-negative" id="negativePct">
+                -
+              </p>
+            </div>
+            <div class="bg-red-100 p-3 rounded-full">
+              <i class="fas fa-frown text-red-600 text-2xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 mb-1">Polarité Moyenne</p>
+              <p class="text-3xl font-bold text-purple-600" id="meanPolarity">
+                -
+              </p>
+            </div>
+            <div class="bg-purple-100 p-3 rounded-full">
+              <i class="fas fa-chart-line text-purple-600 text-2xl"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphiques -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Graphique Camembert -->
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <h3 class="text-xl font-semibold mb-4 text-gray-800">
+            <i class="fas fa-chart-pie mr-2"></i>Distribution des Sentiments
+          </h3>
+          <div class="h-80">
+            <canvas id="sentimentChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Histogramme Temporel -->
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <h3 class="text-xl font-semibold mb-4 text-gray-800">
+            <i class="fas fa-chart-bar mr-2"></i>Volume Temporel
+          </h3>
+          <div class="h-80">
+            <canvas id="temporalChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- WordCloud et Top Tweets -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- WordCloud -->
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <h3 class="text-xl font-semibold mb-4 text-gray-800">
+            <i class="fas fa-cloud mr-2"></i>WordCloud - Tweets Négatifs
+          </h3>
+          <div
+            id="wordcloudContainer"
+            class="flex items-center justify-center h-80 bg-gray-50 rounded-lg"
+          >
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+
+        <!-- Top Tweets Négatifs -->
+        <div class="bg-white rounded-xl shadow-md p-6 card-hover fade-in">
+          <h3 class="text-xl font-semibold mb-4 text-gray-800">
+            <i class="fas fa-exclamation-triangle mr-2"></i>Top 5 Tweets
+            Négatifs
+          </h3>
+          <div
+            id="topNegativeContainer"
+            class="space-y-4 max-h-80 overflow-y-auto"
+          >
+            <div class="flex items-center justify-center h-40">
+              <div class="loading-spinner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+      <div class="container mx-auto px-4 text-center">
+        <p class="text-sm">
+          Tesla Sentiment Analysis - Powered by FastAPI & Tailwind CSS
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      const API_BASE = window.location.origin;
+      let sentimentChart = null;
+      let temporalChart = null;
+
+      // Initialisation
+      document.addEventListener("DOMContentLoaded", function () {
+        loadAllData();
+
+        // Définir les dates par défaut
+        const today = new Date();
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        document.getElementById("endDate").value = today
+          .toISOString()
+          .split("T")[0];
+        document.getElementById("startDate").value = weekAgo
+          .toISOString()
+          .split("T")[0];
+      });
+
+      async function loadAllData() {
+        await Promise.all([
+          loadStats(),
+          loadSentimentDistribution(),
+          loadTemporalData(),
+          loadWordCloud(),
+          loadTopNegative(),
+        ]);
+      }
+
+      async function loadStats() {
+        try {
+          const sentiment = document.getElementById("sentimentFilter").value;
+          const startDate = document.getElementById("startDate").value;
+          const endDate = document.getElementById("endDate").value;
+
+          const params = new URLSearchParams();
+          if (sentiment !== "all") params.append("sentiment", sentiment);
+          if (startDate) params.append("start_date", startDate);
+          if (endDate) params.append("end_date", endDate);
+
+          const response = await fetch(`${API_BASE}/api/stats?${params}`);
+          const data = await response.json();
+
+          document.getElementById("totalTweets").textContent =
+            data.total.toLocaleString();
+          document.getElementById(
+            "positivePct"
+          ).textContent = `${data.positive.percentage.toFixed(1)}%`;
+          document.getElementById(
+            "negativePct"
+          ).textContent = `${data.negative.percentage.toFixed(1)}%`;
+          document.getElementById("meanPolarity").textContent =
+            data.mean_polarity.toFixed(3);
+        } catch (error) {
+          console.error("Erreur lors du chargement des stats:", error);
+        }
+      }
+
+      async function loadSentimentDistribution() {
+        try {
+          const sentiment = document.getElementById("sentimentFilter").value;
+          const startDate = document.getElementById("startDate").value;
+          const endDate = document.getElementById("endDate").value;
+
+          const params = new URLSearchParams();
+          if (sentiment !== "all") params.append("sentiment", sentiment);
+          if (startDate) params.append("start_date", startDate);
+          if (endDate) params.append("end_date", endDate);
+
+          const response = await fetch(
+            `${API_BASE}/api/sentiment-distribution?${params}`
+          );
+          const data = await response.json();
+
+          const ctx = document
+            .getElementById("sentimentChart")
+            .getContext("2d");
+
+          if (sentimentChart) {
+            sentimentChart.destroy();
+          }
+
+          sentimentChart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: ["Positif", "Négatif", "Neutre"],
+              datasets: [
+                {
+                  data: [data.positive, data.negative, data.neutral],
+                  backgroundColor: ["#10b981", "#ef4444", "#6b7280"],
+                  borderWidth: 0,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: {
+                    padding: 20,
+                    font: {
+                      size: 14,
+                    },
+                  },
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const label = context.label || "";
+                      const value = context.parsed || 0;
+                      const total = context.dataset.data.reduce(
+                        (a, b) => a + b,
+                        0
+                      );
+                      const percentage = ((value / total) * 100).toFixed(1);
+                      return `${label}: ${value} (${percentage}%)`;
+                    },
+                  },
+                },
+              },
+            },
+          });
+        } catch (error) {
+          console.error("Erreur lors du chargement de la distribution:", error);
+        }
+      }
+
+      async function loadTemporalData() {
+        try {
+          const sentiment = document.getElementById("sentimentFilter").value;
+          const startDate = document.getElementById("startDate").value;
+          const endDate = document.getElementById("endDate").value;
+
+          const params = new URLSearchParams();
+          if (sentiment !== "all") params.append("sentiment", sentiment);
+          if (startDate) params.append("start_date", startDate);
+          if (endDate) params.append("end_date", endDate);
+
+          const response = await fetch(
+            `${API_BASE}/api/temporal-data?${params}`
+          );
+          const data = await response.json();
+
+          const ctx = document.getElementById("temporalChart").getContext("2d");
+
+          if (temporalChart) {
+            temporalChart.destroy();
+          }
+
+          const labels = data.map((item) => item.date_only);
+          const counts = data.map((item) => item.count);
+
+          temporalChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Nombre de tweets",
+                  data: counts,
+                  backgroundColor: "rgba(102, 126, 234, 0.6)",
+                  borderColor: "rgba(102, 126, 234, 1)",
+                  borderWidth: 2,
+                  borderRadius: 8,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false,
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1,
+                  },
+                },
+                x: {
+                  ticks: {
+                    maxRotation: 45,
+                    minRotation: 45,
+                  },
+                },
+              },
+            },
+          });
+        } catch (error) {
+          console.error(
+            "Erreur lors du chargement des données temporelles:",
+            error
+          );
+        }
+      }
+
+      async function loadWordCloud() {
+        try {
+          const response = await fetch(`${API_BASE}/api/wordcloud`);
+          const data = await response.json();
+
+          const container = document.getElementById("wordcloudContainer");
+          container.innerHTML = `<img src="${data.image}" alt="WordCloud" class="max-w-full h-auto rounded-lg">`;
+        } catch (error) {
+          console.error("Erreur lors du chargement du WordCloud:", error);
+          document.getElementById("wordcloudContainer").innerHTML =
+            '<p class="text-gray-500">Impossible de charger le WordCloud</p>';
+        }
+      }
+
+      async function loadTopNegative() {
+        try {
+          const response = await fetch(`${API_BASE}/api/top-negative?n=5`);
+          const data = await response.json();
+
+          const container = document.getElementById("topNegativeContainer");
+
+          if (data.length === 0) {
+            container.innerHTML =
+              '<p class="text-gray-500 text-center">Aucun tweet négatif trouvé</p>';
+            return;
+          }
+
+          container.innerHTML = data
+            .map(
+              (tweet, index) => `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-sm font-semibold text-red-700">#${
+                              index + 1
+                            }</span>
+                            <span class="text-xs text-gray-500">${new Date(
+                              tweet.date
+                            ).toLocaleDateString("fr-FR")}</span>
+                        </div>
+                        <p class="text-sm text-gray-800 mb-2">${
+                          tweet.text || tweet.text_cleaned || "N/A"
+                        }</p>
+                        <div class="flex items-center space-x-4 text-xs text-gray-600">
+                            <span><i class="fas fa-heart mr-1"></i>${
+                              tweet.likes || 0
+                            }</span>
+                            <span><i class="fas fa-retweet mr-1"></i>${
+                              tweet.retweets || 0
+                            }</span>
+                            <span class="font-semibold text-red-600">Polarité: ${parseFloat(
+                              tweet.polarity
+                            ).toFixed(3)}</span>
+                        </div>
+                    </div>
+                `
+            )
+            .join("");
+        } catch (error) {
+          console.error(
+            "Erreur lors du chargement des tweets négatifs:",
+            error
+          );
+          document.getElementById("topNegativeContainer").innerHTML =
+            '<p class="text-gray-500 text-center">Erreur lors du chargement</p>';
+        }
+      }
+
+      function applyFilters() {
+        loadAllData();
+      }
+    </script>
+  </body>
+</html>
